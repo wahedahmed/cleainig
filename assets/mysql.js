@@ -14,6 +14,9 @@
 
   // ====== دوال مساعدة ======
 
+  // متغير لتتبع ما إذا تم عرض رسالة الخطأ بالفعل
+  let serverErrorShown = false;
+
   /**
    * إرسال طلب HTTP
    * @param {string} url - رابط API
@@ -42,7 +45,22 @@
         const text = await response.text();
         // إذا كان المحتوى يبدأ بـ <?php، يعني أن الخادم لا يعمل
         if (text.trim().startsWith('<?php') || text.trim().startsWith('<!DOCTYPE')) {
-          throw new Error('⚠️ يبدو أن الخادم لا يعمل. تأكد من تشغيل XAMPP أو خادم PHP. لا يمكن فتح ملفات PHP مباشرة من المتصفح.');
+          // عرض الرسالة مرة واحدة فقط
+          if (!serverErrorShown) {
+            serverErrorShown = true;
+            console.error('❌ خطأ: يجب تشغيل المشروع على خادم PHP (XAMPP أو خادم آخر)');
+            console.error('❌ لا يمكن فتح ملفات PHP مباشرة من المتصفح');
+            console.error('❌ يرجى فتح المشروع من: http://localhost/wahed2/');
+            // إظهار تنبيه للمستخدم مرة واحدة فقط
+            setTimeout(() => {
+              alert('⚠️ تحذير: يجب تشغيل المشروع على خادم PHP\n\n' +
+                    'يرجى:\n' +
+                    '1. تشغيل XAMPP\n' +
+                    '2. فتح المشروع من: http://localhost/wahed2/\n\n' +
+                    'لا يمكن فتح ملفات PHP مباشرة من المتصفح.');
+            }, 500);
+          }
+          throw new Error('الخادم لا يعمل');
         }
         throw new Error(`خطأ: الخادم لم يرجع JSON. نوع المحتوى: ${contentType}`);
       }
@@ -60,11 +78,9 @@
 
       return result;
     } catch (error) {
-      console.error('خطأ في طلب API:', error);
-      // إذا كان الخطأ متعلقاً بعدم وجود خادم، عرض رسالة واضحة
-      if (error.message.includes('<?php') || error.message.includes('الخادم لا يعمل')) {
-        console.error('❌ خطأ: يجب تشغيل المشروع على خادم PHP (XAMPP أو خادم آخر)');
-        console.error('❌ لا يمكن فتح ملفات PHP مباشرة من المتصفح');
+      // فقط تسجيل الخطأ بدون تكرار الرسائل
+      if (!error.message.includes('الخادم لا يعمل')) {
+        console.error('خطأ في طلب API:', error.message);
       }
       throw error;
     }
@@ -186,7 +202,10 @@
         const result = await apiRequest(`${SUBSCRIPTION_API}?action=users`, 'GET');
         return result.data || [];
       } catch (error) {
-        console.error('خطأ في الحصول على المستخدمين:', error);
+        // لا تسجيل الخطأ إذا كان متعلقاً بعدم وجود خادم (تم التعامل معه بالفعل)
+        if (!error.message.includes('الخادم لا يعمل')) {
+          console.error('خطأ في الحصول على المستخدمين:', error.message);
+        }
         return [];
       }
     },
@@ -228,7 +247,10 @@
         const result = await apiRequest(`${SUBSCRIPTION_API}?action=settings`, 'GET');
         return result.data || { duration: null };
       } catch (error) {
-        console.error('خطأ في الحصول على الإعدادات:', error);
+        // لا تسجيل الخطأ إذا كان متعلقاً بعدم وجود خادم (تم التعامل معه بالفعل)
+        if (!error.message.includes('الخادم لا يعمل')) {
+          console.error('خطأ في الحصول على الإعدادات:', error.message);
+        }
         return { duration: null };
       }
     },
