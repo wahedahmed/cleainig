@@ -32,7 +32,15 @@ function getDBConnection() {
             $host = defined('DB_PORT') ? DB_HOST . ':' . DB_PORT : DB_HOST;
             $conn = new mysqli($host, DB_USER, DB_PASS, DB_NAME);
             
-            // ... باقي الكود
+            // التحقق من وجود أخطاء في الاتصال
+            if ($conn->connect_error) {
+                error_log("خطأ في الاتصال بقاعدة البيانات: " . $conn->connect_error);
+                return null;
+            }
+            
+            // تعيين الترميز
+            $conn->set_charset(DB_CHARSET);
+            
         } catch (Exception $e) {
             error_log("خطأ في الاتصال بقاعدة البيانات: " . $e->getMessage());
             return null;
@@ -52,15 +60,6 @@ function closeDBConnection() {
     }
 }
 
-// السماح بالوصول من أي مصدر (للتطوير فقط - في الإنتاج يجب تقييده)
-header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type, Authorization');
-header('Content-Type: application/json; charset=utf-8');
-
-// التعامل مع طلبات OPTIONS
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    http_response_code(200);
-    exit();
-}
+// ملاحظة: Headers يتم تعيينها في ملفات API مباشرة
+// هذا الملف يحتوي فقط على دوال الاتصال بقاعدة البيانات
 

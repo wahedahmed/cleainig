@@ -36,6 +36,17 @@
 
       const response = await fetch(url, options);
       
+      // التحقق من نوع المحتوى
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        const text = await response.text();
+        // إذا كان المحتوى يبدأ بـ <?php، يعني أن الخادم لا يعمل
+        if (text.trim().startsWith('<?php') || text.trim().startsWith('<!DOCTYPE')) {
+          throw new Error('⚠️ يبدو أن الخادم لا يعمل. تأكد من تشغيل XAMPP أو خادم PHP. لا يمكن فتح ملفات PHP مباشرة من المتصفح.');
+        }
+        throw new Error(`خطأ: الخادم لم يرجع JSON. نوع المحتوى: ${contentType}`);
+      }
+      
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ error: 'خطأ في الاتصال' }));
         throw new Error(errorData.error || `خطأ HTTP: ${response.status}`);
@@ -50,6 +61,11 @@
       return result;
     } catch (error) {
       console.error('خطأ في طلب API:', error);
+      // إذا كان الخطأ متعلقاً بعدم وجود خادم، عرض رسالة واضحة
+      if (error.message.includes('<?php') || error.message.includes('الخادم لا يعمل')) {
+        console.error('❌ خطأ: يجب تشغيل المشروع على خادم PHP (XAMPP أو خادم آخر)');
+        console.error('❌ لا يمكن فتح ملفات PHP مباشرة من المتصفح');
+      }
       throw error;
     }
   }
