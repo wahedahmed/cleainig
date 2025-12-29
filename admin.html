@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>لوحة إدارة الاشتراكات</title>
+  <link rel="stylesheet" href="assets/styles.css" />
+  <link rel="stylesheet" href="assets/admin-styles.css" />
+</head>
+<body>
+  <!-- نافذة تسجيل الدخول -->
+  <div id="loginModal" class="login-modal">
+    <div class="login-content">
+      <div class="login-header">
+        <h2>🔐 تسجيل الدخول</h2>
+        <p>يرجى إدخال بيانات تسجيل الدخول للوصول إلى لوحة الإدارة</p>
+      </div>
+      <div class="login-body">
+        <div class="form-group">
+          <label for="username">اسم المستخدم</label>
+          <input type="text" id="username" class="input-field" placeholder="أدخل اسم المستخدم" autocomplete="username" />
+        </div>
+        <div class="form-group">
+          <label for="password">كلمة السر</label>
+          <input type="password" id="password" class="input-field" placeholder="أدخل كلمة السر" autocomplete="current-password" />
+        </div>
+        <div id="loginError" class="error-message-text"></div>
+      </div>
+      <div class="login-footer">
+        <button id="btnLogin" class="btn primary">دخول</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- محتوى لوحة الإدارة (مخفي حتى تسجيل الدخول) -->
+  <div class="admin-container" id="adminContainer" style="display:none;">
+    <!-- رأس الصفحة -->
+    <header class="admin-header">
+      <h1>🔐 لوحة إدارة الاشتراكات</h1>
+      <div class="admin-actions">
+        <button class="btn primary" id="btnRefresh">🔄 تحديث</button>
+        <button class="btn danger" onclick="window.adminLogout()">🚪 تسجيل الخروج</button>
+        <a href="index.html" class="btn ghost">← العودة للصفحة الرئيسية</a>
+      </div>
+    </header>
+
+    <!-- حالة الاشتراك الحالي -->
+    <section class="admin-card current-subscription">
+      <h2>📊 حالة الاشتراك الحالي</h2>
+      <div id="currentSubscriptionInfo" class="subscription-info">
+        <p class="loading">جاري التحميل...</p>
+      </div>
+      <div class="subscription-actions">
+        <button class="btn danger" id="btnClearSubscription" style="display:none;">🚫 إلغاء الاشتراك</button>
+      </div>
+    </section>
+
+    <!-- إدارة المستخدمين والأكواد -->
+    <section class="admin-card">
+      <h2>👥 إدارة المستخدمين والأكواد</h2>
+      <div class="user-management">
+        <div class="add-user-section">
+          <h3>إضافة مستخدم جديد</h3>
+          <div class="form-group">
+            <label>ID المستخدم (رقم):</label>
+            <input type="number" id="newUserId" placeholder="مثال: 1" min="1" class="input-field" />
+          </div>
+          <div class="form-group">
+            <label>اسم المستخدم:</label>
+            <input type="text" id="newUserName" placeholder="اسم المستخدم" class="input-field" />
+          </div>
+          <div class="form-group">
+            <label>كود الاشتراك:</label>
+            <input type="text" id="newUserCode" placeholder="أدخل الكود" class="input-field" />
+          </div>
+          <div class="form-group">
+            <button class="btn primary" id="btnAddUser">➕ إضافة مستخدم</button>
+          </div>
+        </div>
+        
+        <div class="users-list-section">
+          <h3>قائمة المستخدمين</h3>
+          <div id="usersList" class="users-list">
+            <p class="loading">جاري التحميل...</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- إعدادات مدة الاشتراك -->
+    <section class="admin-card">
+      <h2>⏰ إعدادات مدة الاشتراك</h2>
+      <div class="duration-settings">
+        <div class="form-group">
+          <label>القيمة:</label>
+          <input type="number" id="durationValue" min="1" value="1" class="input-field" />
+        </div>
+        <div class="form-group">
+          <label>الوحدة الزمنية:</label>
+          <select id="durationUnit" class="input-field">
+            <option value="hours">ساعات</option>
+            <option value="days">أيام</option>
+            <option value="months">أشهر</option>
+            <option value="years">سنوات</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>
+            <input type="checkbox" id="noExpiry" />
+            <span>اشتراك دائم (بدون انتهاء صلاحية)</span>
+          </label>
+        </div>
+        <div class="form-group">
+          <button class="btn primary" id="btnSaveDuration">💾 حفظ الإعدادات</button>
+        </div>
+        <div id="durationPreview" class="duration-preview"></div>
+      </div>
+    </section>
+
+    <!-- تفعيل اشتراك يدوي -->
+    <section class="admin-card">
+      <h2>✅ تفعيل اشتراك يدوي</h2>
+      <div class="manual-activation">
+        <div class="form-group">
+          <label>اختر الكود:</label>
+          <select id="activationCode" class="input-field">
+            <option value="">-- اختر كود --</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>أو أدخل كود مخصص:</label>
+          <input type="text" id="customCode" placeholder="أدخل الكود" class="input-field" />
+        </div>
+        <div class="form-group">
+          <button class="btn primary" id="btnActivate">🚀 تفعيل الاشتراك</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- رسائل النجاح والخطأ -->
+    <div id="adminMessages"></div>
+  </div>
+
+  <script src="assets/mysql_config.js"></script>
+  <script src="assets/mysql.js"></script>
+  <script src="assets/admin-auth.js"></script>
+  <script src="assets/admin.js"></script>
+</body>
+</html>
+

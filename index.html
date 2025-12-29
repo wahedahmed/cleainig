@@ -7,15 +7,6 @@
   <link rel="stylesheet" href="assets/styles.css" />
 </head>
 <body class="proposal" data-plan="1">
-  <header class="topbar no-print">
-    <div class="l">
-      <button class="btn" id="btnReset" title="جديد">جديد</button>
-    </div>
-    <div class="r">
-      <button class="btn primary" id="btnPrint">طباعة / PDF</button>
-    </div>
-  </header>
-
   <main class="paper">
     <!-- رأس -->
     <section class="hero">
@@ -171,9 +162,14 @@
     </section>
   </main>
 
-  <script src="assets/config.js"></script>
+  <!-- زر الطباعة في أسفل الشاشة -->
+  <div class="print-button-container no-print">
+    <button class="btn-print-fixed" id="btnPrint">🖨️ طباعة / PDF</button>
+  </div>
+
   <script src="assets/mysql_config.js"></script>
   <script src="assets/mysql.js"></script>
+  <script src="assets/subscription.js"></script>
   <script src="assets/quote.js"></script>
 </body>
 </html>

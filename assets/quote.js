@@ -431,7 +431,6 @@
   
   // ربط أحداث الأزرار الرئيسية
   btnPrint?.addEventListener('click',()=>window.print());
-  btnReset?.addEventListener('click',()=>{ if(confirm('بدء نموذج جديد؟')){ location.reload(); } });
 
 
 
@@ -584,16 +583,15 @@
     console.log('🔄 بدء عملية الحفظ...');
     
     if (!window.Supa) {
-      console.error('❌ Supabase غير محمّل');
-      showError('Supabase غير محمّل. تحقق من إعدادات الاتصال.');
+      console.error('❌ واجهة قاعدة البيانات غير محمّلة');
+      showError('واجهة قاعدة البيانات غير محمّلة. تحقق من إعدادات الاتصال.');
       return;
     }
     
-    console.log('✅ Supabase محمّل بنجاح');
-    console.log('📊 إعدادات Supabase:', {
-      url: window.SUPA_URL ? 'موجود' : 'مفقود',
-      key: window.SUPA_ANON_KEY ? 'موجود' : 'مفقود',
-      tenant: window.TENANT
+    console.log('✅ واجهة قاعدة البيانات محمّلة بنجاح');
+    console.log('📊 إعدادات قاعدة البيانات:', {
+      api: window.API_BASE_URL || 'محلي',
+      tenant: window.TENANT || 'غير محدد'
     });
 
     // التحقق الشامل من صحة البيانات
@@ -663,6 +661,11 @@
         console.log('🔄 تحديث سجل موجود، ID:', editId);
         const result = await Supa.update(editId, record);
         console.log('✅ نتيجة التحديث:', result);
+        
+        if (result && result.error) {
+          throw new Error(result.error);
+        }
+        
         showSuccess('تم تحديث العرض في قاعدة البيانات بنجاح');
         sessionStorage.removeItem('quote_edit_id');
         // تحديث نص الزر
@@ -672,6 +675,11 @@
         record.created_at = new Date().toISOString();
         const result = await Supa.insert(record);
         console.log('✅ نتيجة الإدراج:', result);
+        
+        if (result && result.error) {
+          throw new Error(result.error);
+        }
+        
         showSuccess('تم حفظ العرض في قاعدة البيانات بنجاح');
       }
 
@@ -689,7 +697,7 @@
       if (err.message) {
         errorMessage += err.message;
       } else {
-        errorMessage += 'تحقق من إعدادات config.js وصلاحيات Supabase.';
+        errorMessage += 'تحقق من إعدادات قاعدة البيانات والاتصال بالخادم.';
       }
       
       showError(errorMessage);
@@ -776,6 +784,24 @@
   
   // تهيئة النموذج
   async function initializeApp() {
+    // التحقق من حالة الاشتراك قبل تهيئة التطبيق
+    if (typeof window.isSubscriptionActive === 'function' && !window.isSubscriptionActive()) {
+      console.log('🔒 يتطلب التحقق من الاشتراك - انتظار إدخال الكود');
+      // إخفاء المحتوى الرئيسي حتى يتم التحقق
+      const mainContent = document.querySelector('.paper') || document.querySelector('main');
+      if (mainContent) {
+        mainContent.style.display = 'none';
+      }
+      // لا نتابع التهيئة حتى يتم التحقق من الكود
+      return;
+    }
+    
+    // إظهار المحتوى الرئيسي إذا كان مخفياً
+    const mainContent = document.querySelector('.paper') || document.querySelector('main');
+    if (mainContent) {
+      mainContent.style.display = 'block';
+    }
+    
     const editId = sessionStorage.getItem('quote_edit_id');
     
     if (editId) {
@@ -841,6 +867,42 @@
     addRealTimeValidation();
   }
   
-  // بدء التهيئة
-  initializeApp();
+  // بدء التهيئة بعد التأكد من تحميل نظام الاشتراكات
+  // انتظار تحميل نظام الاشتراكات أولاً
+  function startApp() {
+    // التحقق من تحميل نظام الاشتراكات
+    if (typeof window.isSubscriptionActive === 'function') {
+      // دائماً ننتظر التحقق من الكود (لأننا نطلب إدخاله في كل مرة)
+      // انتظار التحقق من الكود عبر حدث مخصص
+      const handleSubscriptionVerified = () => {
+        console.log('✅ تم التحقق من الاشتراك - بدء تهيئة التطبيق');
+        initializeApp();
+      };
+      
+      // التحقق من حالة الاشتراك الحالية
+      if (window.isSubscriptionActive()) {
+        // إذا كان الاشتراك نشطاً (تم التحقق في هذه الجلسة)، ابدأ التهيئة
+        initializeApp();
+      } else {
+        // انتظار التحقق من الكود
+        window.addEventListener('subscriptionVerified', handleSubscriptionVerified, { once: true });
+        
+        // إخفاء المحتوى حتى يتم التحقق
+        const mainContent = document.querySelector('.paper') || document.querySelector('main');
+        if (mainContent) {
+          mainContent.style.display = 'none';
+        }
+      }
+    } else {
+      // إذا لم يتم تحميل نظام الاشتراكات بعد، انتظر قليلاً
+      setTimeout(startApp, 100);
+    }
+  }
+  
+  // بدء التطبيق
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', startApp);
+  } else {
+    startApp();
+  }
 })();
